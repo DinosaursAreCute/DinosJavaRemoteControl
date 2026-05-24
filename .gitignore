@@ -33,3 +33,14 @@ bin/
 *.log
 *(1).pdf
 copilot*.xml
+
+
+### Java ###
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.ipr
+*.iws
+*.tmp
