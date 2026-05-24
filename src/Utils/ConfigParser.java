@@ -1,6 +1,7 @@
 package Utils;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -43,6 +44,14 @@ public class ConfigParser {
 		}
 	}
 
+	public String getProperty(String key) {
+		if (!properties.containsKey(key)) {
+			_logger.warning("Property not found: " + key);
+			return null;
+		}
+		return properties.getProperty(key);
+	}
+
 	public boolean parseBoolean(String key, boolean defaultValue) {
 		if (!properties.containsKey(key)) {
 			_logger.warning("Property not found: " + key + ", returning default value: " + defaultValue);
@@ -55,14 +64,6 @@ public class ConfigParser {
 			_logger.warning("Invalid boolean value for key: " + key + ", returning default value: " + defaultValue);
 			return defaultValue;
 		}
-	}
-
-	public String getProperty(String key) {
-		if (!properties.containsKey(key)) {
-			_logger.warning("Property not found: " + key);
-			return null;
-		}
-		return properties.getProperty(key);
 	}
 
 	public int parseInt(String key, int defaultValue) {
@@ -79,6 +80,20 @@ public class ConfigParser {
 		}
 	}
 
+	public long parseLong(String key, long defaultValue) {
+		if (!properties.containsKey(key)) {
+			_logger.warning("Property not found: " + key + ", returning default value: " + defaultValue);
+			return defaultValue;
+		}
+		String value = getProperty(key);
+		try {
+			return Long.parseLong(value);
+		} catch (NumberFormatException e) {
+			_logger.warning("Found invalid long value: '" + value + "' for key: " + key + ", returning default value: " + defaultValue);
+			return defaultValue;
+		}
+	}
+
 	public String getProperty(String key, String defaultValue) {
 		if (!properties.containsKey(key)) {
 			_logger.warning("Property not found: " + key + ", returning default value: " + defaultValue);
@@ -90,4 +105,23 @@ public class ConfigParser {
 	public Properties getProperties() {
 		return properties;
 	}
+
+	public void saveConfig(String comments) {
+		try (FileOutputStream fos = new FileOutputStream(configFilePath)) {
+			properties.store(fos, comments);
+			_logger.debug("Config saved successfully: " + configFilePath);
+		} catch (IOException e) {
+			_logger.fatal("Failed to save config: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	public void setProperty(String key, String value) {
+		properties.setProperty(key, value);
+	}
+
+	public void removeProperty(String key) {
+		properties.remove(key);
+	}
+
 }

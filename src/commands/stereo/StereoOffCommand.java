@@ -2,10 +2,17 @@ package commands.stereo;
 
 import Utils.Logger;
 import Utils.LoggerFactory;
-import commands.Command;
+import commands.BaseCommand;
+import commands.CommandInfo;
 import receiver.Stereoanlage;
 
-public class StereoOffCommand implements Command {
+@CommandInfo(
+    name = "Stereo Off",
+    description = "Turn the stereo system off",
+    category = "Audio",
+    receiverType = Stereoanlage.class
+)
+public class StereoOffCommand extends BaseCommand {
     private static final Logger log = LoggerFactory.getLogger("StereoOffCommand");
     private final Stereoanlage stereo;
 

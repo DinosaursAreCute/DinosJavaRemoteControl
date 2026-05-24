@@ -2,10 +2,17 @@ package commands.lights;
 
 import Utils.Logger;
 import Utils.LoggerFactory;
-import commands.Command;
+import commands.BaseCommand;
+import commands.CommandInfo;
 import receiver.Licht;
 
-public class LightOnCommand implements Command {
+@CommandInfo(
+    name = "Light On",
+    description = "Turn the light on",
+    category = "Lighting",
+    receiverType = Licht.class
+)
+public class LightOnCommand extends BaseCommand {
     private static final Logger log = LoggerFactory.getLogger("LightOnCommand");
     private final Licht light;
 

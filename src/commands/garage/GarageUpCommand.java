@@ -2,10 +2,17 @@ package commands.garage;
 
 import Utils.Logger;
 import Utils.LoggerFactory;
-import commands.Command;
+import commands.BaseCommand;
+import commands.CommandInfo;
 import receiver.Garage;
 
-public class GarageUpCommand implements Command {
+@CommandInfo(
+    name = "Garage Up",
+    description = "Raise the garage door",
+    category = "Garage",
+    receiverType = Garage.class
+)
+public class GarageUpCommand extends BaseCommand {
     private static final Logger log = LoggerFactory.getLogger("GarageUpCommand");
     private final Garage garage;
 

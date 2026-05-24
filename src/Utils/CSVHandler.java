@@ -104,7 +104,7 @@ public class CSVHandler {
         logger.debug("Reading all lines without header from: " + filepath);
         List<String[]> allData = readAll();
         if (!allData.isEmpty()) {
-            allData.removeFirst(); // Remove header
+            allData.remove(0); // Remove header (compatible with Java 8+)
             logger.debug("Removed header, " + allData.size() + " data lines remaining");
         }
         return allData;

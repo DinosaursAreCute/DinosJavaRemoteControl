@@ -1,0 +1,299 @@
+/* Dinos Remote Control - Dark Theme Stylesheet */
+
+/*
+ * Color Palette - Edit these colors to customize the theme
+ * Background: #1e1e1e (dark), #2d2d2d (medium), #3c3c3c (light)
+ * Accent: #0078d4 (primary), #005a9e (secondary), #106ebe (hover)
+ * Text: #ffffff (primary), #cccccc (secondary), #808080 (disabled)
+ */
+
+/* Main Window */
+.root {
+    -fx-background-color: #1e1e1e;
+}
+
+/* Menu Bar */
+.menu-bar {
+    -fx-background-color: #2d2d2d;
+    -fx-border-color: #555555;
+    -fx-border-width: 0 0 1 0;
+}
+
+.menu, .menu-item {
+    -fx-background-color: #2d2d2d;
+    -fx-text-fill: #ffffff;
+}
+
+.menu:hover, .menu-item:hover {
+    -fx-background-color: #3c3c3c;
+}
+
+.menu:showing {
+    -fx-background-color: #3c3c3c;
+}
+
+/* Buttons - General */
+.button {
+    -fx-background-color: #0078d4;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-padding: 10 20 10 20;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);
+}
+
+.button:hover {
+    -fx-background-color: #106ebe;
+}
+
+.button:pressed {
+    -fx-background-color: #005a9e;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 2, 0, 0, 1);
+}
+
+.button:disabled {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #808080;
+    -fx-opacity: 0.6;
+}
+
+/* Remote Control Buttons */
+.remote-button {
+    -fx-background-color: #0078d4;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 15 30 15 30;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 3);
+    -fx-pref-width: 200;
+    -fx-pref-height: 60;
+}
+
+.remote-button:hover {
+    -fx-background-color: #106ebe;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.remote-button:pressed {
+    -fx-background-color: #005a9e;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 4, 0, 0, 1);
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+/* Toolbar Buttons */
+.toolbar-button {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-padding: 8 16 8 16;
+    -fx-background-radius: 4;
+    -fx-border-color: #555555;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+
+.toolbar-button:hover {
+    -fx-background-color: #2d2d2d;
+    -fx-border-color: #0078d4;
+}
+
+/* Undo/Redo Buttons */
+.control-button {
+    -fx-background-color: #555555;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+    -fx-padding: 10 20 10 20;
+    -fx-background-radius: 5;
+    -fx-min-width: 80;
+}
+
+.control-button:hover {
+    -fx-background-color: #666666;
+}
+
+.control-button:disabled {
+    -fx-background-color: #333333;
+    -fx-text-fill: #666666;
+}
+
+/* Labels */
+.label {
+    -fx-text-fill: #ffffff;
+}
+
+.slot-label {
+    -fx-text-fill: #cccccc;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+/* ScrollPane */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: #1e1e1e;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .scroll-bar {
+    -fx-background-color: #2d2d2d;
+}
+
+.scroll-pane .scroll-bar .thumb {
+    -fx-background-color: #3c3c3c;
+    -fx-background-radius: 5;
+}
+
+.scroll-pane .scroll-bar .thumb:hover {
+    -fx-background-color: #555555;
+}
+
+/* Tab Pane */
+.tab-pane {
+    -fx-background-color: #1e1e1e;
+}
+
+.tab-pane .tab-header-area {
+    -fx-background-color: #2d2d2d;
+}
+
+.tab {
+    -fx-background-color: #2d2d2d;
+    -fx-text-fill: #cccccc;
+}
+
+.tab:selected {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #ffffff;
+}
+
+.tab:hover {
+    -fx-background-color: #3c3c3c;
+}
+
+.tab-pane .tab-content-area {
+    -fx-background-color: #1e1e1e;
+    -fx-border-color: #555555;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Text Area (for log output) */
+.text-area {
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: #ffffff;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-size: 12px;
+}
+
+.text-area .content {
+    -fx-background-color: #1a1a1a;
+}
+
+/* ComboBox / Choice Box */
+.combo-box, .choice-box {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #555555;
+    -fx-border-radius: 4;
+}
+
+.combo-box:hover, .choice-box:hover {
+    -fx-border-color: #0078d4;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #3c3c3c;
+}
+
+.combo-box-popup .list-cell {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #ffffff;
+}
+
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: #2d2d2d;
+}
+
+/* Progress Bar */
+.progress-bar {
+    -fx-background-color: #3c3c3c;
+    -fx-background-radius: 5;
+}
+
+.progress-bar .bar {
+    -fx-background-color: #0078d4;
+    -fx-background-radius: 5;
+    -fx-background-insets: 0;
+}
+
+/* Dialog Pane */
+.dialog-pane {
+    -fx-background-color: #2d2d2d;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #3c3c3c;
+}
+
+.dialog-pane .content {
+    -fx-background-color: #2d2d2d;
+    -fx-padding: 20;
+}
+
+.dialog-pane .button-bar .button {
+    -fx-background-color: #0078d4;
+    -fx-text-fill: white;
+}
+
+/* Title Bar Styling */
+.window-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+/* Grid Layout */
+.button-grid {
+    -fx-background-color: #1e1e1e;
+    -fx-padding: 20;
+    -fx-hgap: 15;
+    -fx-vgap: 15;
+}
+
+/* Toolbar */
+.toolbar {
+    -fx-background-color: #2d2d2d;
+    -fx-padding: 10;
+    -fx-spacing: 10;
+    -fx-border-color: #555555;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* Status indicators */
+.status-success {
+    -fx-text-fill: #4caf50;
+}
+
+.status-warning {
+    -fx-text-fill: #ff9800;
+}
+
+.status-error {
+    -fx-text-fill: #f44336;
+}
+
+.status-info {
+    -fx-text-fill: #2196f3;
+}
+
+/* Separator */
+.separator {
+    -fx-background-color: #555555;
+}

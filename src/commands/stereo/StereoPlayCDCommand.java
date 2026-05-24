@@ -2,10 +2,17 @@ package commands.stereo;
 
 import Utils.Logger;
 import Utils.LoggerFactory;
-import commands.Command;
+import commands.BaseCommand;
+import commands.CommandInfo;
 import receiver.Stereoanlage;
 
-public class StereoPlayCDCommand implements Command {
+@CommandInfo(
+    name = "Play CD",
+    description = "Start CD playback on stereo",
+    category = "Audio",
+    receiverType = Stereoanlage.class
+)
+public class StereoPlayCDCommand extends BaseCommand {
     private static final Logger log = LoggerFactory.getLogger("StereoPlayCDCommand");
     private final Stereoanlage stereo;
 

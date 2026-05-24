@@ -2,10 +2,17 @@ package commands.stereo;
 
 import Utils.Logger;
 import Utils.LoggerFactory;
-import commands.Command;
+import commands.BaseCommand;
+import commands.CommandInfo;
 import receiver.Stereoanlage;
 
-public class StereoVolumeUpCommand implements Command {
+@CommandInfo(
+    name = "Volume Up",
+    description = "Increase stereo volume",
+    category = "Audio",
+    receiverType = Stereoanlage.class
+)
+public class StereoVolumeUpCommand extends BaseCommand {
     private static final Logger log = LoggerFactory.getLogger("StereoVolumeUpCommand");
     private final Stereoanlage stereo;
 
