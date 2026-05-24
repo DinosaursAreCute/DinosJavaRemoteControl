@@ -1,7 +1,7 @@
 package Utils;
 
 public class LoggerFactory {
-	public static ConfigParser configParser = new ConfigParser("appData/config/project.properties", true);
+	public static ConfigParser configParser = new ConfigParser("AppData/config/project.properties", true);
 
 
 	public static Logger getLogger(Class<?> clazz) {
