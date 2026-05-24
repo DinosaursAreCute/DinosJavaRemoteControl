@@ -10,7 +10,7 @@ public class CommandMakroCommand implements Command {
     private final Logger log = LoggerFactory.getLogger("MakroCommand");
 
     public CommandMakroCommand(Command[] commandTarget){
-        log.debug("Creating new Makro Command Object with args["+commandTarget.toString()+"]");
+        log.debug("Creating new Makro Command Object with args["+ Arrays.toString(commandTarget) +"]");
         this.commands = commandTarget;
         log.value("Makro commands: "+ Arrays.toString(commands));
         log.success("Finished Creating Makro Command object: "+this);
