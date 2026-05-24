@@ -1,10 +1,13 @@
 package remote;
 import Utils.*;
+import java.util.*;
+
 public class Remote {
-    private static Logger log = LoggerFactory.getLogger("Remote");
+    private final static Logger log = LoggerFactory.getLogger("Remote");
     private Command[] onButtons = new Command[7];
     private Command[] offButtons = new Command[7];
-
+    private ArrayList<Integer> history = new ArrayList<>();
+    private ArrayList<Integer> historyOnOff = new ArrayList<>();
 
     public Remote() {
         log.debug("Creating new remote object with args: ");
@@ -30,6 +33,19 @@ public class Remote {
         log.success("Successfully set commands for buttons at index: "+index);
     }
 
+    public void undo(){
+        log.info("Undo last Action");
+        log.debug("Command history:["+ history.toString()+"]["+historyOnOff+"]");
+        int command = history.getLast();
+        boolean onOff;
+	    onOff = historyOnOff.getLast() != 1;
+        log.debug("Undo action: Command:["+command+"],TurnOn:["+onOff+"]");
+        executeFunction(command,onOff);
+        history.remove(history.getLast());
+        historyOnOff.remove(historyOnOff.getLast());
+
+    }
+
     public void executeFunction(int index, boolean isOnButton){
         log.debug("Executing button: "+index);
         if(index < 0 || index > onButtons.length){
@@ -38,6 +54,12 @@ public class Remote {
         }
         if(isOnButton) onButtons[index].execute();
         else offButtons[index].execute();
+        int t;
+        if(isOnButton) t = 1;
+        else t = 0;
+        history.add(index);
+        historyOnOff.add(t);
+        log.success("Function ["+index+"]["+isOnButton+"]");
     }
 
 }

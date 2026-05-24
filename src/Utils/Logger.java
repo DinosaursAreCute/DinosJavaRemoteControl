@@ -72,7 +72,7 @@ public class Logger {
         synchronized (this) {
             try {
                 if (appendToFile) {
-                    logFilePath = Paths.get("log.txt"); // Always append to this file
+                    logFilePath = Paths.get("Application.log"); // Always append to this file
                 } else {
                     String baseName = "log_" + FILE_DTF.format(LocalDateTime.now());
                     logFilePath = Paths.get(baseName + ".txt"); // New file per run
