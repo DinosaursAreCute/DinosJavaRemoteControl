@@ -31,3 +31,5 @@ bin/
 
 ### Log Files ###
 *.log
+*(1).pdf
+*ask2agent.xml
