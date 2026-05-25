@@ -26,5 +26,6 @@ public class GarageDownCommand extends BaseCommand {
     public void execute() {
         log.info("Executing GarageDownCommand - lowering garage door");
         garage.runter();
+        applyDuration();
     }
 }

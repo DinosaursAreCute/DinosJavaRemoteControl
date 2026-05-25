@@ -11,7 +11,8 @@ public record CommandMetadata(
     String iconPath,
     boolean requiresParameters,
     Class<?> receiverType,
-    Class<? extends Command> commandClass
+    Class<? extends Command> commandClass,
+    Integer durationMs
 ) {
     /**
      * Get a display-friendly string representation
@@ -26,5 +27,18 @@ public record CommandMetadata(
      */
     public String getCommandClassName() {
         return commandClass.getSimpleName();
+    }
+
+    /**
+     * Resolve effective duration with fallback chain:
+     * 1. command-specific override from config
+     * 2. global default from config
+     * 3. hardcoded 250ms fallback
+     */
+    public long getEffectiveDurationMs() {
+        if (durationMs != null) {
+            return durationMs;
+        }
+        return CommandDurationConfig.getInstance().getGlobalDefaultDurationMs();
     }
 }

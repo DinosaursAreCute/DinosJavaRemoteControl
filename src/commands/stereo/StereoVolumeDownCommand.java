@@ -28,5 +28,6 @@ public class StereoVolumeDownCommand extends BaseCommand {
         int newVolume = currentVolume - 10;
         log.info("Executing StereoVolumeDownCommand - decreasing volume from " + currentVolume + " to " + newVolume);
         stereo.setLautstaerke(newVolume);
+        applyDuration();
     }
 }

@@ -73,9 +73,9 @@
 }
 
 .remote-button:hover {
-    -fx-background-color: #106ebe;
-    -fx-scale-x: 1.02;
-    -fx-scale-y: 1.02;
+    -fx-background-color: #10a4be;
+    -fx-scale-x: 1.08;
+    -fx-scale-y: 1.08;
 }
 
 .remote-button:pressed {

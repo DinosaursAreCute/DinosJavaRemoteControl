@@ -10,123 +10,141 @@ import remoteClasses.Remote;
 public class Main {
     public static void main(String[] args) {
         Logger log = LoggerFactory.getLogger("Main");
-        log.info("Starting Dinos Remote Control System - Testing New Features");
+        log.info("Starting Dinos Remote Control System - CLI Regression Mode (FULL)");
 
-        // Step 1: Initialize ReceiverRegistry with singleton receivers
-        log.info("=== Step 1: Initializing Receivers ===");
-        ReceiverRegistry receiverRegistry = ReceiverRegistry.getInstance();
+        ReceiverRegistry receiverRegistry = initializeReceivers(log);
+        scanCommands(log);
+        Remote remote = initializeRemote(log);
 
-        // Create one instance of each receiver type
-        Licht light = new Licht();
-        receiverRegistry.registerReceiver(Licht.class, light);
+        runFullRegressionScenario(remote, log);
+        printSessionSummary(remote, log);
 
-        Garage garage = new Garage();
-        receiverRegistry.registerReceiver(Garage.class, garage);
+        log.success("=== CLI FULL REGRESSION COMPLETE ===");
+    }
 
-        Stereoanlage stereo = new Stereoanlage();
-        stereo.legeCDEin("Drugs and Guns for Everyone - The handsome devil");
-        receiverRegistry.registerReceiver(Stereoanlage.class, stereo);
+    private static ReceiverRegistry initializeReceivers(Logger log) {
+        step(log, "Initialize Receivers", () -> {
+            ReceiverRegistry receiverRegistry = ReceiverRegistry.getInstance();
 
-        log.success("All receivers registered");
+            // One singleton-like instance per receiver type.
+            Licht light = new Licht();
+            receiverRegistry.registerReceiver(Licht.class, light);
 
-        // Step 2: Initialize CommandRegistry and scan for commands
-        log.info("=== Step 2: Scanning for Commands ===");
-        CommandRegistry commandRegistry = CommandRegistry.getInstance();
-        commandRegistry.scanAndRegister("commands");
-        log.success("Command scanning complete");
+            Garage garage = new Garage();
+            receiverRegistry.registerReceiver(Garage.class, garage);
 
-        // Step 3: Create Remote and load configuration
-        log.info("=== Step 3: Initializing Remote Control ===");
-        Remote remote = new Remote();
+            Stereoanlage stereo = new Stereoanlage();
+            stereo.legeCDEin("Drugs and Guns for Everyone - The handsome devil");
+            receiverRegistry.registerReceiver(Stereoanlage.class, stereo);
 
-        try {
-            remote.loadConfiguration();
-            log.success("Remote control initialized and configured with " + remote.getNumSlots() + " slots");
-        } catch (Exception e) {
-            log.error("Failed to load configuration: " + e.getMessage());
-            log.warning("Remote will use FallbackCommand for all slots");
-        }
+            log.success("All receivers registered");
+        });
 
-        // Step 4: Test command execution with all features
-        log.info("=== Step 4: Testing Command Execution ===");
+        return ReceiverRegistry.getInstance();
+    }
 
-        // Execute some individual commands
-        log.info("Executing individual commands...");
-        remote.executeFunction(0, true);   // Light ON
-        remote.executeFunction(0, false);  // Light OFF
-        remote.executeFunction(1, true);   // Garage UP
-        remote.executeFunction(1, false);  // Garage DOWN
+    private static void scanCommands(Logger log) {
+        step(log, "Scan and Register Commands", () -> {
+            CommandRegistry commandRegistry = CommandRegistry.getInstance();
+            commandRegistry.scanAndRegister("commands");
+            log.success("Command scanning complete");
+        });
+    }
 
-        // Execute stereo commands
-        remote.executeFunction(2, true);   // Stereo ON
-        remote.executeFunction(4, true);   // Play CD
-        remote.executeFunction(3, true);   // Volume UP
+    private static Remote initializeRemote(Logger log) {
+        final Remote remote = new Remote();
 
-        // Execute macro if available (slot 5)
-        if (remote.getNumSlots() > 5) {
-            log.info("Testing Party Mode macro...");
-            remote.executeFunction(5, true);   // Party Mode ON (macro)
-        }
+        step(log, "Initialize Remote from Config", () -> {
+            try {
+                remote.loadConfiguration();
+                log.success("Remote configured with " + remote.getNumSlots() + " slots");
+            } catch (Exception e) {
+                log.error("Failed to load configuration: " + e.getMessage());
+                log.warning("Remote will use fallback commands for all slots");
+            }
+        });
 
-        // Step 5: Test Undo/Redo functionality
-        log.info("=== Step 5: Testing Undo/Redo Functionality ===");
+        return remote;
+    }
 
-        log.info("Can undo? " + remote.canUndo());
-        log.info("Can redo? " + remote.canRedo());
+    private static void runFullRegressionScenario(Remote remote, Logger log) {
+        log.info("=== SCENARIO START: FULL ===");
 
-        // Undo last 3 commands
-        log.info("Performing 3 undo operations...");
-        for (int i = 0; i < 3; i++) {
-            if (remote.canUndo()) {
+        step(log, "Execute Base ON/OFF Commands", () -> {
+            execute(log, remote, 0, true, "Slot 0 ON");
+            execute(log, remote, 0, false, "Slot 0 OFF");
+            execute(log, remote, 1, true, "Slot 1 ON");
+            execute(log, remote, 1, false, "Slot 1 OFF");
+        });
+
+        step(log, "Execute Stereo Flow", () -> {
+            execute(log, remote, 2, true, "Slot 2 ON");
+            execute(log, remote, 4, true, "Slot 4 ON");
+            execute(log, remote, 3, true, "Slot 3 ON");
+        });
+
+        step(log, "Execute Macro Slot If Present", () -> {
+            if (remote.getNumSlots() > 5) {
+                execute(log, remote, 5, true, "Slot 5 ON (Macro)");
+                execute(log, remote, 5, false, "Slot 5 OFF (Macro)");
+            } else {
+                log.warning("Macro slot 5 not configured; skipping macro regression step");
+            }
+        });
+
+        step(log, "Undo Chain", () -> {
+            log.info("Undo available before chain: " + remote.canUndo());
+            while (remote.canUndo()) {
                 remote.undo();
             }
-        }
+            log.info("Undo available after chain: " + remote.canUndo());
+            log.info("Redo available after chain: " + remote.canRedo());
+        });
 
-        log.info("After undo - Can redo? " + remote.canRedo());
-
-        // Redo 2 commands
-        log.info("Performing 2 redo operations...");
-        for (int i = 0; i < 2; i++) {
-            if (remote.canRedo()) {
+        step(log, "Redo Chain", () -> {
+            log.info("Redo available before chain: " + remote.canRedo());
+            while (remote.canRedo()) {
                 remote.redo();
             }
-        }
+            log.info("Undo available after chain: " + remote.canUndo());
+            log.info("Redo available after chain: " + remote.canRedo());
+        });
 
-        log.info("After redo - Can undo? " + remote.canUndo());
-        log.info("After redo - Can redo? " + remote.canRedo());
+        step(log, "Redo Clear Check", () -> {
+            execute(log, remote, 3, false, "Slot 3 OFF (new command)");
+            log.info("Redo available after new command: " + remote.canRedo() + " (expected false)");
+        });
 
-        // Execute new command (should clear redo stack)
-        log.info("Executing new command (should clear redo stack)...");
-        remote.executeFunction(3, false);  // Volume DOWN
-        log.info("After new command - Can redo? " + remote.canRedo() + " (should be false)");
+        log.info("=== SCENARIO END: FULL ===");
+    }
 
-        // Step 6: Display Session Statistics
-        log.info("=== Step 6: Session Statistics ===");
-        SessionStats stats = remote.getSessionStats();
+    private static void printSessionSummary(Remote remote, Logger log) {
+        step(log, "Session Statistics", () -> {
+            SessionStats stats = remote.getSessionStats();
 
-        log.info("Commands Executed:     " + stats.getCommandsExecuted());
-        log.info("Macros Executed:       " + stats.getMacrosExecuted());
-        log.info("Undo Operations:       " + stats.getUndoOperations());
-        log.info("Redo Operations:       " + stats.getRedoOperations());
-        log.info("Failed Commands:       " + stats.getFailedCommands());
-        log.info("Session Duration:      " + stats.getSessionDurationFormatted());
-        log.info("Average Exec Time:     " + stats.getAverageExecutionTimeMs() + "ms");
-        log.info("Most Used Command:     " + stats.getMostExecutedCommand());
+            log.info("Commands Executed: " + stats.getCommandsExecuted());
+            log.info("Macros Executed:   " + stats.getMacrosExecuted());
+            log.info("Undo Operations:   " + stats.getUndoOperations());
+            log.info("Redo Operations:   " + stats.getRedoOperations());
+            log.info("Failed Commands:   " + stats.getFailedCommands());
+            log.info("Session Duration:  " + stats.getSessionDurationFormatted());
+            log.info("Avg Exec Time:     " + stats.getAverageExecutionTimeMs() + "ms");
+            log.info("Most Used Command: " + stats.getMostExecutedCommand());
 
-        // Step 7: Display full formatted report
-        log.info("=== Step 7: Full Statistics Report ===");
-        System.out.println(stats.getFormattedReport());
+            System.out.println(stats.getFormattedReport());
+            log.info("Undo stack size: " + remote.getCommandHistory().getUndoStackSize());
+            log.info("Redo stack size: " + remote.getCommandHistory().getRedoStackSize());
+        });
+    }
 
-        // Step 8: Test command history
-        log.info("=== Step 8: Command History Info ===");
-        log.info("Undo stack size: " + remote.getCommandHistory().getUndoStackSize());
-        log.info("Redo stack size: " + remote.getCommandHistory().getRedoStackSize());
+    private static void execute(Logger log, Remote remote, int slot, boolean isOn, String label) {
+        log.info("Execute -> " + label + " [slot=" + slot + ", isOn=" + isOn + "]");
+        remote.executeFunction(slot, isOn);
+    }
 
-        log.success("=== All Tests Complete! ===");
-        log.info("System is ready for GUI implementation");
+    private static void step(Logger log, String title, Runnable action) {
+        log.info("=== STEP START: " + title + " ===");
+        action.run();
+        log.success("=== STEP END: " + title + " ===");
     }
 }
-
-
-
-

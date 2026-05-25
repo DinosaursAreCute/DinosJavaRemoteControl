@@ -26,5 +26,6 @@ public class StereoOffCommand extends BaseCommand {
     public void execute() {
         log.info("Executing StereoOffCommand - turning stereo off");
         stereo.ausschalten();
+        applyDuration();
     }
 }

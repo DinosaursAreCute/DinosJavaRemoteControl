@@ -26,5 +26,6 @@ public class StereoPlayCDCommand extends BaseCommand {
     public void execute() {
         log.info("Executing StereoPlayCDCommand - starting CD playback");
         stereo.spieleCDAb();
+        applyDuration();
     }
 }

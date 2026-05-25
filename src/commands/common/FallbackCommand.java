@@ -13,5 +13,6 @@ public class FallbackCommand extends BaseCommand {
     @Override
     public void execute() {
         log.warning("No command assigned - executing fallback (no-op)");
+        applyDuration();
     }
 }

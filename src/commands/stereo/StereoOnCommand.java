@@ -27,5 +27,6 @@ public class StereoOnCommand extends BaseCommand {
         log.info("Executing StereoOnCommand - turning stereo on");
         stereo.anschalten();
         stereo.setLautstaerke(10);
+        applyDuration();
     }
 }

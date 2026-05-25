@@ -26,5 +26,6 @@ public class StereoStopPlaybackCommand extends BaseCommand {
     public void execute() {
         log.info("Executing StereoStopPlaybackCommand - stopping playback");
         stereo.stoppePlayback();
+        applyDuration();
     }
 }

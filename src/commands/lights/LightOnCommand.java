@@ -26,5 +26,6 @@ public class LightOnCommand extends BaseCommand {
     public void execute() {
         log.info("Executing LightOnCommand - turning lights on");
         light.setLichtAn();
+        applyDuration();
     }
 }

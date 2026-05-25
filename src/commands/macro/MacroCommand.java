@@ -2,7 +2,9 @@ package commands.macro;
 
 import Utils.Logger;
 import Utils.LoggerFactory;
+import commands.BaseCommand;
 import commands.Command;
+import commands.CommandInfo;
 import commands.CommandWithProgress;
 
 import java.util.Arrays;
@@ -13,7 +15,13 @@ import java.util.List;
  * This allows combining multiple actions into a single button press.
  * Supports progress tracking for GUI progress bars.
  */
-public class MacroCommand implements CommandWithProgress {
+@CommandInfo(
+    name = "Macro Command",
+    description = "Execute a sequence of commands in order",
+    category = "Macro",
+    receiverType = Object.class
+)
+public class MacroCommand extends BaseCommand {
     private static final Logger log = LoggerFactory.getLogger("MacroCommand");
     private final Command[] commands;
     private final String name;
@@ -70,6 +78,7 @@ public class MacroCommand implements CommandWithProgress {
             }
         }
         log.success("MacroCommand '" + name + "' execution completed");
+        applyDuration();
     }
 
     /**
@@ -111,13 +120,14 @@ public class MacroCommand implements CommandWithProgress {
         }
 
         log.success("MacroCommand '" + name + "' execution completed");
+        applyDuration();
     }
 
     /**
-     * Get total duration of all commands in macro
+     * Get total duration of all child commands in macro (not including macro's own duration)
+     * Used for progress tracking and timing calculations
      */
-    @Override
-    public long getDurationMs() {
+    public long getChildrenDurationMs() {
         long totalDuration = 0;
         for (Command cmd : commands) {
             if (cmd instanceof CommandWithProgress) {
@@ -127,6 +137,14 @@ public class MacroCommand implements CommandWithProgress {
             }
         }
         return totalDuration;
+    }
+
+    /**
+     * Get macro's own configured duration from BaseCommand
+     */
+    @Override
+    public long getDurationMs() {
+        return super.getDurationMs();
     }
 
     /**

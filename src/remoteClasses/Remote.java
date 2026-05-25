@@ -3,9 +3,10 @@ package remoteClasses;
 import Utils.*;
 import commands.Command;
 import commands.CommandRegistry;
-import commands.common.FallbackCommand;
+import commands.macro.MacroRegistry;
 import commands.macro.MacroCommand;
 import commands.macro.MacroCommandFactory;
+import commands.common.FallbackCommand;
 
 import java.util.*;
 
@@ -93,42 +94,38 @@ public class Remote {
                 errors.forEach(error -> log.error(error.toString()));
             }
 
-            // Load each slot
+            // Step 1: Load macro definitions from config into registry
+            log.info("Loading macros from configuration...");
+            try {
+                MacroRegistry macroRegistry = MacroRegistry.getInstance();
+                macroRegistry.loadAndRegisterMacros();
+            } catch (Exception e) {
+                log.warning("Failed to load macros: " + e.getMessage());
+            }
+
+            // Step 2: Load all slots uniformly (both macro and regular commands)
             int loadedSlots = 0;
-            MacroCommandFactory macroFactory = new MacroCommandFactory();
 
             for (int slot = 0; slot < numSlots; slot++) {
                 String onCmdName = config.getProperty("slot." + slot + ".on");
                 String offCmdName = config.getProperty("slot." + slot + ".off");
 
-                // Check if this is a macro command definition
-                String onMacro = config.getProperty("slot." + slot + ".on.macro");
-                String offMacro = config.getProperty("slot." + slot + ".off.macro");
-
-                if (onMacro != null && offMacro != null) {
-                    // Load macro commands
+                if (onCmdName != null && offCmdName != null) {
+                    // Load command (macro or regular) by ID
                     try {
-                        String macroName = config.getProperty("slot." + slot + ".name", "Macro " + slot);
-                        MacroCommand onMacroCmd = macroFactory.createMacroFromString(onMacro, macroName + " On");
-                        MacroCommand offMacroCmd = macroFactory.createMacroFromString(offMacro, macroName + " Off");
+                        Command onCmd = commandRegistry.createCommand(onCmdName);
+                        Command offCmd = commandRegistry.createCommand(offCmdName);
 
-                        onButtons[slot] = onMacroCmd;
-                        offButtons[slot] = offMacroCmd;
-                        log.info("Assigned macro slot " + slot + ": " + macroName);
-                        loadedSlots++;
+                        if (onCmd != null && offCmd != null) {
+                            onButtons[slot] = onCmd;
+                            offButtons[slot] = offCmd;
+                            log.info("Assigned slot " + slot + ": ON=" + onCmdName + ", OFF=" + offCmdName);
+                            loadedSlots++;
+                        } else {
+                            log.warning("Failed to load commands for slot " + slot + ", using FallbackCommand");
+                        }
                     } catch (Exception e) {
-                        log.error("Failed to create macro for slot " + slot + ": " + e.getMessage());
-                    }
-                } else if (onCmdName != null && offCmdName != null) {
-                    // Load regular commands
-                    if (commandRegistry.isCommandAvailable(onCmdName) &&
-                        commandRegistry.isCommandAvailable(offCmdName)) {
-
-                        assignCommand(slot, onCmdName, offCmdName);
-                        log.info("Assigned slot " + slot + ": ON=" + onCmdName + ", OFF=" + offCmdName);
-                        loadedSlots++;
-                    } else {
-                        log.warning("Invalid commands for slot " + slot + ", using FallbackCommand");
+                        log.warning("Error loading slot " + slot + ": " + e.getMessage());
                     }
                 } else {
                     log.debug("Slot " + slot + " not configured, using FallbackCommand");

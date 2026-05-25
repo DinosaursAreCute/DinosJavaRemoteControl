@@ -19,10 +19,12 @@ public class CommandRegistry {
     private static CommandRegistry instance;
 
     private final Map<String, CommandMetadata> commandMetadata;
+    private final Map<String, Command> macroInstances;  // Store pre-instantiated macros
     private final ReceiverRegistry receiverRegistry;
 
     private CommandRegistry() {
         commandMetadata = new HashMap<>();
+        macroInstances = new HashMap<>();
         receiverRegistry = ReceiverRegistry.getInstance();
         log.debug("CommandRegistry initialized");
     }
@@ -76,6 +78,15 @@ public class CommandRegistry {
             return;
         }
 
+        // Resolve command-specific duration override or use null to fall back to global default
+        String className = commandClass.getSimpleName();
+        CommandDurationConfig durationConfig = CommandDurationConfig.getInstance();
+        long configuredDuration = durationConfig.getDurationForCommand(className);
+        long globalDefault = durationConfig.getGlobalDefaultDurationMs();
+
+        // Store as null if matches global default, otherwise store the override
+        Integer durationMs = (configuredDuration != globalDefault) ? (int) configuredDuration : null;
+
         CommandMetadata metadata = new CommandMetadata(
             info.name(),
             info.description(),
@@ -83,20 +94,50 @@ public class CommandRegistry {
             info.iconPath(),
             info.requiresParameters(),
             info.receiverType(),
-            commandClass
+            commandClass,
+            durationMs
         );
 
-        String key = commandClass.getSimpleName();
+        String key = className;
         commandMetadata.put(key, metadata);
-        log.debug("Registered command: " + key + " (" + info.name() + ")");
+        log.debug("Registered command: " + key + " (" + info.name() + ") with metadata: " + metadata);
+    }
+
+    /**
+     * Register a pre-created MacroCommand instance as a first-class command
+     * @param macroId Unique identifier for the macro (e.g., "partyMode_On")
+     * @param macroCommand The MacroCommand instance to register
+     */
+    public void registerMacroCommand(String macroId, Command macroCommand) {
+        // Create metadata for the macro
+        CommandMetadata metadata = new CommandMetadata(
+            macroId,
+            "Macro command: " + macroId,
+            "Macro",
+            "",
+            false,
+            Object.class,
+            macroCommand.getClass(),
+            null  // Use global default duration
+        );
+
+        commandMetadata.put(macroId, metadata);
+        macroInstances.put(macroId, macroCommand);
+
+        log.debug("Registered macro command: " + macroId);
     }
 
     /**
      * Create a command instance by class name
-     * @param commandClassName Simple class name (e.g., "LightOnCommand")
+     * @param commandClassName Simple class name (e.g., "LightOnCommand") or macro ID (e.g., "partyMode_On")
      * @return Command instance, or FallbackCommand if not found
      */
     public Command createCommand(String commandClassName) {
+        // Check if this is a pre-instantiated macro
+        if (macroInstances.containsKey(commandClassName)) {
+            return macroInstances.get(commandClassName);
+        }
+
         CommandMetadata metadata = commandMetadata.get(commandClassName);
 
         if (metadata == null) {
@@ -113,7 +154,14 @@ public class CommandRegistry {
                 .getConstructor(metadata.receiverType());
 
             Command command = constructor.newInstance(receiver);
-            log.debug("Created command instance: " + commandClassName);
+
+            // Log command creation with metadata
+            long effectiveDuration = metadata.getEffectiveDurationMs();
+            log.success("Created command: " + commandClassName
+                + " [name=" + metadata.name()
+                + ", category=" + metadata.category()
+                + ", durationMs=" + effectiveDuration + "]");
+
             return command;
 
         } catch (Exception e) {

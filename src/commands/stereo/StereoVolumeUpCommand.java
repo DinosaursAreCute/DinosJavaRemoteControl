@@ -28,5 +28,6 @@ public class StereoVolumeUpCommand extends BaseCommand {
         int newVolume = currentVolume + 10;
         log.info("Executing StereoVolumeUpCommand - increasing volume from " + currentVolume + " to " + newVolume);
         stereo.setLautstaerke(newVolume);
+        applyDuration();
     }
 }

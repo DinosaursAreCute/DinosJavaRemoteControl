@@ -26,5 +26,6 @@ public class GarageUpCommand extends BaseCommand {
     public void execute() {
         log.info("Executing GarageUpCommand - raising garage door");
         garage.hoch();
+        applyDuration();
     }
 }

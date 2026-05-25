@@ -3,6 +3,7 @@ package Utils;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 
 public class ConfigParser {
@@ -122,6 +123,18 @@ public class ConfigParser {
 
 	public void removeProperty(String key) {
 		properties.remove(key);
+	}
+
+	/**
+	 * Get all configuration properties as a Map
+	 * @return Map of all key-value pairs from the configuration file
+	 */
+	public Map<String, String> getAllProperties() {
+		Map<String, String> result = new java.util.HashMap<>();
+		for (String key : properties.stringPropertyNames()) {
+			result.put(key, properties.getProperty(key));
+		}
+		return result;
 	}
 
 }

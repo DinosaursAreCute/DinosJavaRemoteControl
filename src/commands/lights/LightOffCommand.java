@@ -26,5 +26,6 @@ public class LightOffCommand extends BaseCommand {
     public void execute() {
         log.info("Executing LightOffCommand - turning lights off");
         light.setLichtAus();
+        applyDuration();
     }
 }
