@@ -39,7 +39,7 @@ public class ConfigParser {
 		try (FileInputStream fis = new FileInputStream(configFilePath)) {
 			properties.load(fis);
 			_logger.debug("Config file loaded successfully: " + configFilePath);
-			_logger.debug("Config properties: " + properties.toString());
+			_logger.debug("Config properties: " + properties);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

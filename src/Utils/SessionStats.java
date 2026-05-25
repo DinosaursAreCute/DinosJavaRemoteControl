@@ -193,17 +193,16 @@ public class SessionStats {
      * Get formatted statistics report
      */
     public String getFormattedReport() {
-        StringBuilder report = new StringBuilder();
-        report.append("=== Session Statistics ===\n");
-        report.append("Session Duration:      ").append(getSessionDurationFormatted()).append("\n");
-        report.append("Commands Executed:     ").append(getCommandsExecuted()).append("\n");
-        report.append("Macros Executed:       ").append(getMacrosExecuted()).append("\n");
-        report.append("Undo Operations:       ").append(getUndoOperations()).append("\n");
-        report.append("Redo Operations:       ").append(getRedoOperations()).append("\n");
-        report.append("Failed Commands:       ").append(getFailedCommands()).append("\n");
-        report.append("Average Exec Time:     ").append(getAverageExecutionTimeMs()).append("ms\n");
-        report.append("Most Used Command:     ").append(getMostExecutedCommand()).append("\n");
-        return report.toString();
+	    String report = "=== Session Statistics ===\n" +
+			    "Session Duration:      " + getSessionDurationFormatted() + "\n" +
+			    "Commands Executed:     " + getCommandsExecuted() + "\n" +
+			    "Macros Executed:       " + getMacrosExecuted() + "\n" +
+			    "Undo Operations:       " + getUndoOperations() + "\n" +
+			    "Redo Operations:       " + getRedoOperations() + "\n" +
+			    "Failed Commands:       " + getFailedCommands() + "\n" +
+			    "Average Exec Time:     " + getAverageExecutionTimeMs() + "ms\n" +
+			    "Most Used Command:     " + getMostExecutedCommand() + "\n";
+        return report;
     }
 
     /**

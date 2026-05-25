@@ -9,7 +9,7 @@ public class Stereoanlage {
 
 	private enum Mode {
 		CD, RADIO
-	};
+	}
 
 	private Mode currentMode = Mode.RADIO;
 

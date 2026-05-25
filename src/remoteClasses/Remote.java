@@ -4,8 +4,6 @@ import Utils.*;
 import commands.Command;
 import commands.CommandRegistry;
 import commands.macro.MacroRegistry;
-import commands.macro.MacroCommand;
-import commands.macro.MacroCommandFactory;
 import commands.common.FallbackCommand;
 
 import java.util.*;
@@ -19,6 +17,8 @@ public class Remote {
     private int numSlots;
     private Command[] onButtons;
     private Command[] offButtons;
+    private String[] onCommandIds;  // Track command IDs (macro IDs) for proper labeling
+    private String[] offCommandIds;
     private final CommandHistory commandHistory;
     private final SessionStats sessionStats;
     private final CommandRegistry commandRegistry;
@@ -42,6 +42,8 @@ public class Remote {
         log.debug("Creating new Remote with " + numSlots + " slots");
         onButtons = new Command[numSlots];
         offButtons = new Command[numSlots];
+        onCommandIds = new String[numSlots];
+        offCommandIds = new String[numSlots];
 
         // Initialize all slots with FallbackCommand
         initializeWithFallbackCommands();
@@ -83,6 +85,8 @@ public class Remote {
             if (onButtons.length != numSlots) {
                 onButtons = new Command[numSlots];
                 offButtons = new Command[numSlots];
+                onCommandIds = new String[numSlots];
+                offCommandIds = new String[numSlots];
                 initializeWithFallbackCommands();
             }
 
@@ -119,6 +123,8 @@ public class Remote {
                         if (onCmd != null && offCmd != null) {
                             onButtons[slot] = onCmd;
                             offButtons[slot] = offCmd;
+                            onCommandIds[slot] = onCmdName;  // Store the ID for proper display
+                            offCommandIds[slot] = offCmdName;
                             log.info("Assigned slot " + slot + ": ON=" + onCmdName + ", OFF=" + offCmdName);
                             loadedSlots++;
                         } else {
@@ -215,79 +221,7 @@ public class Remote {
         log.debug("Assigned commands to slot " + slot + ": ON=" + onCommandName + ", OFF=" + offCommandName);
     }
 
-    /**
-     * Assign a macro command to a slot using comma-separated command names
-     * @param slot Slot index
-     * @param onCommandNames Comma-separated list of command names for "on" macro
-     * @param offCommandNames Comma-separated list of command names for "off" macro
-     * @param macroName Display name for the macro
-     */
-    public void assignMacro(int slot, String onCommandNames, String offCommandNames, String macroName) {
-        if (slot < 0 || slot >= numSlots) {
-            log.error("Invalid slot index: " + slot);
-            throw new IllegalArgumentException("Invalid slot index: " + slot);
-        }
 
-        log.info("Assigning macro to slot " + slot + ": " + macroName);
-        MacroCommandFactory factory = new MacroCommandFactory();
-
-        try {
-            MacroCommand onMacro = factory.createMacroFromString(onCommandNames, macroName + " On");
-            MacroCommand offMacro = factory.createMacroFromString(offCommandNames, macroName + " Off");
-
-            onButtons[slot] = onMacro;
-            offButtons[slot] = offMacro;
-
-            log.success("Assigned macro '" + macroName + "' to slot " + slot);
-        } catch (Exception e) {
-            log.error("Failed to assign macro to slot " + slot + ": " + e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Assign a macro command to a slot using lists of command names
-     * @param slot Slot index
-     * @param onCommandNames List of command names for "on" macro
-     * @param offCommandNames List of command names for "off" macro
-     * @param macroName Display name for the macro
-     */
-    public void assignMacro(int slot, List<String> onCommandNames, List<String> offCommandNames, String macroName) {
-        if (slot < 0 || slot >= numSlots) {
-            log.error("Invalid slot index: " + slot);
-            throw new IllegalArgumentException("Invalid slot index: " + slot);
-        }
-
-        log.info("Assigning macro to slot " + slot + ": " + macroName);
-        MacroCommandFactory factory = new MacroCommandFactory();
-
-        try {
-            MacroCommand onMacro = factory.createMacro(onCommandNames, macroName + " On");
-            MacroCommand offMacro = factory.createMacro(offCommandNames, macroName + " Off");
-
-            onButtons[slot] = onMacro;
-            offButtons[slot] = offMacro;
-
-            log.success("Assigned macro '" + macroName + "' to slot " + slot);
-        } catch (Exception e) {
-            log.error("Failed to assign macro to slot " + slot + ": " + e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Set command at specific slot (legacy method)
-     */
-    public void setCommand(int index, String descript, Command on, Command off){
-        if(index >= numSlots || index < 0){
-            log.error("INVALID index:'" + index + "' for button: '" + descript);
-            throw new IllegalArgumentException("Invalid index position for button: " + descript);
-        }
-        log.debug("Setting button at index: " + index + ", with args[" + descript + ", " + on.toString() + off.toString() + "]");
-        onButtons[index] = on;
-        offButtons[index] = off;
-        log.success("Successfully set commands for buttons at index: " + index);
-    }
 
     /**
      * Undo the last action
@@ -346,10 +280,12 @@ public class Remote {
         // Record statistics
         Command cmd = isOnButton ? onButtons[index] : offButtons[index];
         String commandName = cmd.getClass().getSimpleName();
-        sessionStats.recordCommandExecution(commandName, executionTime);
 
-        if (cmd instanceof MacroCommand) {
-            sessionStats.recordMacroExecution(((MacroCommand) cmd).getName(), executionTime);
+        // Track if this is a macro command
+        if (commandName.equals("MacroCommand")) {
+            sessionStats.recordMacroExecution(commandName, executionTime);
+        } else {
+            sessionStats.recordCommandExecution(commandName, executionTime);
         }
 
         log.success("Function [" + index + "][" + isOnButton + "]");
@@ -426,6 +362,43 @@ public class Remote {
         }
         Command cmd = isOnButton ? onButtons[slot] : offButtons[slot];
         return cmd != null ? cmd.getClass().getSimpleName() : null;
+    }
+
+    /**
+     * Get the command ID for a specific slot and button type
+     * Returns the macro ID (e.g., "partyMode_On") or class name for regular commands
+     */
+    public String getCommandId(int slot, boolean isOnButton) {
+        if (slot < 0 || slot >= numSlots) {
+            return null;
+        }
+        String id = isOnButton ? onCommandIds[slot] : offCommandIds[slot];
+        // If no ID was stored, fall back to class name
+        if (id == null) {
+            Command cmd = isOnButton ? onButtons[slot] : offButtons[slot];
+            return cmd != null ? cmd.getClass().getSimpleName() : null;
+        }
+        return id;
+    }
+
+    /**
+     * Get the ON command for a specific slot
+     */
+    public Command getOnCommand(int slot) {
+        if (slot < 0 || slot >= numSlots) {
+            return null;
+        }
+        return onButtons[slot];
+    }
+
+    /**
+     * Get the OFF command for a specific slot
+     */
+    public Command getOffCommand(int slot) {
+        if (slot < 0 || slot >= numSlots) {
+            return null;
+        }
+        return offButtons[slot];
     }
 
     /**

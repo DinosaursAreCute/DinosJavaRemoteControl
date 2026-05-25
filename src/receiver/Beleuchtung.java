@@ -1,7 +1,7 @@
 package receiver;
 
 public class Beleuchtung {
-	private String beschreibung;
+	private final String beschreibung;
 	private int dimmStufe;
 	
 	

@@ -57,7 +57,7 @@ public class FileOperations {
 			_logger.error("Error reading file: " + e.getMessage());
 			return null;
 		}
-		_logger.debug("File content: "+content.toString());
+		_logger.debug("File content: "+ content);
 		return content;
 	}
 
@@ -78,7 +78,7 @@ public class FileOperations {
 			_logger.error("Error reading file: " + e.getMessage());
 			return null;
 		}
-		_logger.debug("File content: "+contentBuilder.toString());
+		_logger.debug("File content: "+ contentBuilder);
 		return contentBuilder.toString();
 	}
 
