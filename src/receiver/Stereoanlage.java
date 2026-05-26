@@ -9,7 +9,7 @@ public class Stereoanlage {
 
 	private enum Mode {
 		CD, RADIO
-	};
+	}
 
 	private Mode currentMode = Mode.RADIO;
 
@@ -84,6 +84,18 @@ public class Stereoanlage {
 	public void setRadio() {
 		System.out.println("Der aktuelle Modus ist Radio");
 		this.currentMode = Mode.RADIO;
+	}
+
+	public String getCd() {
+		return cd;
+	}
+
+	public boolean isAn() {
+		return an;
+	}
+
+	public boolean isSpielt() {
+		return spielt;
 	}
 
 	public String getAktuelleCD() {

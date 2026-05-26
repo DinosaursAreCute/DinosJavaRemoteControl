@@ -1,16 +1,23 @@
 package gui;
 
 import javafx.application.Application;
+import javafx.animation.Timeline;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import Utils.Logger;
 import Utils.LoggerFactory;
 import Utils.SessionStats;
+import commands.Command;
 import commands.CommandRegistry;
+import commands.CommandWithProgress;
 import receiver.*;
 import remoteClasses.Remote;
 
@@ -29,7 +36,8 @@ public class mainView extends Application {
     private VBox buttonGrid;
     private Button btnUndo;
     private Button btnRedo;
-    private Stage debugWindow;
+    private DebugWindow debugWindow;  // Separate debug window instance
+    private ProgressOverlay progressOverlay;  // Global progress overlay
 
     @Override
     public void start(Stage primaryStage) {
@@ -40,6 +48,9 @@ public class mainView extends Application {
 
         // Create main layout
         BorderPane root = new BorderPane();
+
+        // Create progress overlay (will be on top)
+        progressOverlay = new ProgressOverlay();
 
         // Create menu bar
         MenuBar menuBar = createMenuBar();
@@ -61,8 +72,13 @@ public class mainView extends Application {
 
         root.setCenter(centerContent);
 
-        // Create scene and apply CSS
-        Scene scene = new Scene(root, 600, 700);
+        // Wrap in StackPane to layer progress overlay on top
+        StackPane sceneRoot = new StackPane();
+        sceneRoot.getChildren().addAll(root, progressOverlay);
+        StackPane.setAlignment(progressOverlay, Pos.CENTER);
+
+        // Create scene with layered root
+        Scene scene = new Scene(sceneRoot, 600, 700);
 
         // Try multiple CSS loading strategies
         boolean cssLoaded = false;
@@ -95,11 +111,15 @@ public class mainView extends Application {
             applyInlineCSS(root, menuBar, buttonGrid);
         }
 
+        // Initialize debug window (but don't show yet)
+        debugWindow = new DebugWindow(remote);
+
+
         primaryStage.setTitle("Dinos Remote Control");
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(e -> {
             log.info("Application closing");
-            if (debugWindow != null) {
+            if (debugWindow != null && debugWindow.isShowing()) {
                 debugWindow.close();
             }
         });
@@ -244,55 +264,74 @@ public class mainView extends Application {
         HBox slotBox = new HBox(15);
         slotBox.setAlignment(Pos.CENTER);
 
-        // Get command names
-        String onCommandName = remote.getCommandName(slot, true);
-        String offCommandName = remote.getCommandName(slot, false);
-
-        // Create slot label
-        VBox labelBox = new VBox(5);
-        labelBox.setAlignment(Pos.CENTER);
-        Label slotLabel = new Label("Slot " + slot);
-        slotLabel.getStyleClass().add("slot-label");
-        labelBox.getChildren().add(slotLabel);
+        // Get command IDs (macro IDs for macros, class names for regular commands)
+        String onCommandId = remote.getCommandId(slot, true);
+        String offCommandId = remote.getCommandId(slot, false);
 
         // Format command names for button labels
-        String onLabel = formatCommandLabel(onCommandName);
-        String offLabel = formatCommandLabel(offCommandName);
+        String onLabel = formatCommandLabel(onCommandId);
+        String offLabel = formatCommandLabel(offCommandId);
 
         // Create ON button
         Button onButton = new Button(onLabel);
         onButton.getStyleClass().add("remote-button");
-        onButton.setTooltip(new Tooltip(onCommandName != null ? onCommandName : "No command"));
-        onButton.setOnAction(e -> executeCommand(slot, true));
+        onButton.setTooltip(new Tooltip(onCommandId != null ? onCommandId : "No command"));
+        onButton.setOnAction(e -> executeCommand(slot, true, onCommandId, onLabel));
 
         // Create OFF button
         Button offButton = new Button(offLabel);
         offButton.getStyleClass().add("remote-button");
-        offButton.setTooltip(new Tooltip(offCommandName != null ? offCommandName : "No command"));
-        offButton.setOnAction(e -> executeCommand(slot, false));
+        offButton.setTooltip(new Tooltip(offCommandId != null ? offCommandId : "No command"));
+        offButton.setOnAction(e -> executeCommand(slot, false, offCommandId, offLabel));
 
         slotBox.getChildren().addAll(onButton, offButton);
 
         return slotBox;
     }
 
+
     /**
      * Format command name for button label
-     * Converts "LightOnCommand" to "Light On"
-     * Converts "MacroCommand" to "Macro"
+     * For macros: retrieves display name from registry (e.g., "partyMode_On" -> "Party Mode")
+     * For regular commands: converts camelCase (e.g., "LightOnCommand" -> "Light On")
      */
     private String formatCommandLabel(String commandName) {
         if (commandName == null || commandName.isEmpty()) {
             return "Empty";
         }
 
-        // Remove "Command" suffix
-        String label = commandName.replace("Command", "");
+        // Check if this is a macro (contains underscore pattern like "macroId_On" or "macroId_Off")
+        if (commandName.contains("_")) {
+            // Try to get metadata from registry to get the display name
+            try {
+                CommandRegistry registry = CommandRegistry.getInstance();
+                commands.CommandMetadata metadata = registry.getCommandMetadata(commandName);
+                if (metadata != null) {
+                    // Extract macro name from metadata name (e.g., "partyMode_On" -> "Party Mode")
+                    String name = metadata.name();
+                    if (name != null && !name.isEmpty()) {
+                        return name;
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Could not retrieve metadata for " + commandName);
+            }
 
-        // Handle MacroCommand special case
-        if (commandName.startsWith("MacroCommand")) {
-            return "Macro";
+            // Fallback: parse macro ID from command name (e.g., "partyMode_On" -> "Party Mode")
+            String[] parts = commandName.split("_");
+            if (parts.length > 0) {
+                String macroId = parts[0];
+                // Convert camelCase to Title Case (partyMode -> Party Mode)
+                String formatted = macroId.replaceAll("([A-Z])", " $1").trim();
+                if (formatted.isEmpty()) {
+                    formatted = macroId;
+                }
+                return formatted;
+            }
         }
+
+        // Regular command handling
+        String label = commandName.replace("Command", "");
 
         // Split camelCase into words
         // e.g., "LightOn" -> "Light On", "StereoVolumeUp" -> "Stereo Volume Up"
@@ -300,7 +339,6 @@ public class mainView extends Application {
 
         // Limit length to fit on button (max 15 chars)
         if (label.length() > 15) {
-            // Try to abbreviate
             label = label.substring(0, 12) + "...";
         }
 
@@ -330,13 +368,103 @@ public class mainView extends Application {
     }
 
     /**
-     * Execute a command from a button
+     * Execute a command with global progress overlay showing actual elapsed time
      */
-    private void executeCommand(int slot, boolean isOn) {
+    private void executeCommand(int slot, boolean isOn, String commandId, String displayLabel) {
         log.info("Button pressed: Slot " + slot + " " + (isOn ? "ON" : "OFF"));
-        remote.executeFunction(slot, isOn);
-        updateControlButtons();
+
+        // Get command for duration and execution
+        Command cmd = isOn ? remote.getOnCommand(slot) : remote.getOffCommand(slot);
+        long durationMs = (cmd instanceof CommandWithProgress)
+            ? ((CommandWithProgress) cmd).getDurationMs()
+            : 250;
+
+        // Show progress overlay with task name
+        progressOverlay.show(displayLabel);
+
+        // If this is a macro, set progress listener to track child commands
+        if (cmd instanceof commands.macro.MacroCommand) {
+            ((commands.macro.MacroCommand) cmd).setProgressListener(progressOverlay);
+        }
+
+        // Use array to hold timeline reference (allows modification in lambda)
+        final Timeline[] progressTimeline = new Timeline[1];
+
+        // Run command asynchronously
+        Task<Void> task = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                long startTime = System.currentTimeMillis();
+
+                // Execute command on background thread
+                remote.executeFunction(slot, isOn);
+
+                // Ensure we track actual elapsed time
+                long elapsedMs = System.currentTimeMillis() - startTime;
+                log.debug("Command executed in " + elapsedMs + "ms (expected " + durationMs + "ms)");
+
+                return null;
+            }
+        };
+
+        // Update progress bar based on actual elapsed time during execution
+        task.setOnRunning(e -> {
+            long startTime = System.currentTimeMillis();
+
+            // Update progress every 50ms
+            Timeline progressUpdate = new Timeline(
+                new KeyFrame(
+                    Duration.millis(50),
+                    event -> {
+                        long elapsedMs = System.currentTimeMillis() - startTime;
+                        double progress = Math.min((double) elapsedMs / durationMs, 1.0);
+
+                        // Only update if not a macro (macros update via ProgressListener)
+                        if (!(cmd instanceof commands.macro.MacroCommand)) {
+                            progressOverlay.updateProgress(progress);
+                        }
+                    }
+                )
+            );
+            progressUpdate.setCycleCount(Timeline.INDEFINITE);
+            progressUpdate.play();
+
+            // Store timeline reference for cleanup
+            progressTimeline[0] = progressUpdate;
+        });
+
+        // Clean up after command completes
+        task.setOnSucceeded(e -> {
+            // Stop progress animation
+            if (progressTimeline[0] != null) {
+                progressTimeline[0].stop();
+            }
+
+            // Hide overlay
+            progressOverlay.hide();
+            updateControlButtons();
+
+            // Refresh debug window if open
+            if (debugWindow != null && debugWindow.isShowing()) {
+                debugWindow.refreshAll();
+            }
+        });
+
+        task.setOnFailed(e -> {
+            log.error("Command execution failed: " + task.getException().getMessage());
+
+            // Stop progress animation
+            if (progressTimeline[0] != null) {
+                progressTimeline[0].stop();
+            }
+
+            progressOverlay.hide();
+        });
+
+        // Start execution on background thread
+        new Thread(task).start();
     }
+
 
     /**
      * Perform undo operation
@@ -382,71 +510,9 @@ public class mainView extends Application {
      * Open the Debug window
      */
     private void openDebugWindow() {
-        if (debugWindow != null && debugWindow.isShowing()) {
-            debugWindow.toFront();
-            return;
+        if (debugWindow != null) {
+            debugWindow.show();
         }
-
-        log.info("Opening Debug window");
-
-        debugWindow = new Stage();
-        debugWindow.setTitle("Debug Panel");
-
-        TabPane tabPane = new TabPane();
-
-        // Tab 1: Log Output
-        Tab logTab = new Tab("Log Output");
-        logTab.setClosable(false);
-        TextArea logArea = new TextArea();
-        logArea.setEditable(false);
-        logArea.setText("Log output will appear here...\n(Real-time log integration coming soon)");
-        logTab.setContent(logArea);
-
-        // Tab 2: Receiver States
-        Tab statesTab = new Tab("Receiver States");
-        statesTab.setClosable(false);
-        TextArea statesArea = new TextArea();
-        statesArea.setEditable(false);
-        statesArea.setText("Receiver States:\n\n(State tracking coming soon)");
-        statesTab.setContent(statesArea);
-
-        // Tab 3: Session Stats
-        Tab statsTab = new Tab("Session Stats");
-        statsTab.setClosable(false);
-        TextArea statsArea = new TextArea();
-        statsArea.setEditable(false);
-        updateSessionStats(statsArea);
-        statsTab.setContent(statsArea);
-
-        // Refresh stats when tab is selected
-        statsTab.setOnSelectionChanged(e -> {
-            if (statsTab.isSelected()) {
-                updateSessionStats(statsArea);
-            }
-        });
-
-        tabPane.getTabs().addAll(logTab, statesTab, statsTab);
-
-        Scene scene = new Scene(tabPane, 600, 400);
-
-        // Load CSS file
-        try {
-            String cssPath = "file:src/gui/remote-control-dark.css";
-            scene.getStylesheets().add(cssPath);
-        } catch (Exception e) {
-            log.warning("Could not load CSS for debug window: " + e.getMessage());
-        }
-
-        debugWindow.setScene(scene);
-        debugWindow.show();
-    }
-
-    /**
-     * Update session statistics display
-     */
-    private void updateSessionStats(TextArea statsArea) {
-        SessionStats stats = remote.getSessionStats();
-        statsArea.setText(stats.getFormattedReport());
     }
 
     /**
@@ -464,12 +530,10 @@ public class mainView extends Application {
 
         // Style all buttons
         buttonGrid.getChildren().forEach(node -> {
-            if (node instanceof HBox) {
-                HBox hbox = (HBox) node;
-                hbox.getChildren().forEach(child -> {
-                    if (child instanceof Button) {
-                        Button btn = (Button) child;
-                        btn.setStyle(
+            if (node instanceof HBox hbox) {
+	            hbox.getChildren().forEach(child -> {
+                    if (child instanceof Button btn) {
+	                    btn.setStyle(
                             "-fx-background-color: #0078d4; " +
                             "-fx-text-fill: white; " +
                             "-fx-font-size: 14px; " +

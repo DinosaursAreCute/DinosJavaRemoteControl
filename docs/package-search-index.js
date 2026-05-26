@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"commands"},{"l":"commands.common"},{"l":"commands.garage"},{"l":"commands.lights"},{"l":"commands.macro"},{"l":"commands.stereo"},{"l":"gui"},{"l":"receiver"},{"l":"remoteClasses"},{"l":"Utils"}];updateSearchResults();

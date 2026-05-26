@@ -1,7 +1,7 @@
 package receiver;
 
 public class Verstaerker {
-	private String beschreibung;
+	private final String beschreibung;
 	private Tuner tuner;
 	private DvdSpieler dvd;
 	private CdSpieler cd;

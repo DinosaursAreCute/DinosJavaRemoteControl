@@ -5,7 +5,10 @@ public class Licht {
 
 	boolean licht = false;
 
-	
+	public boolean isLicht() {
+		return licht;
+	}
+
 	public void setLichtAn(){
 		licht = true;
 		System.out.println("Licht An!");

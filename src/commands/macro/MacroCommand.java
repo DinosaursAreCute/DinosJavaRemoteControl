@@ -6,6 +6,7 @@ import commands.BaseCommand;
 import commands.Command;
 import commands.CommandInfo;
 import commands.CommandWithProgress;
+import commands.ProgressListener;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +26,7 @@ public class MacroCommand extends BaseCommand {
     private static final Logger log = LoggerFactory.getLogger("MacroCommand");
     private final Command[] commands;
     private final String name;
+    private ProgressListener progressListener;  // Track progress of child commands
 
     /**
      * Create a macro command with an array of commands
@@ -64,108 +66,58 @@ public class MacroCommand extends BaseCommand {
         this(commands.toArray(new Command[0]), name);
     }
 
+    /**
+     * Set progress listener for tracking child command execution
+     */
+    public void setProgressListener(ProgressListener listener) {
+        this.progressListener = listener;
+    }
+
     @Override
     public void execute() {
         log.info("Executing MacroCommand '" + name + "' - running " + commands.length + " commands");
         for (int i = 0; i < commands.length; i++) {
-            log.debug("Executing macro command [" + i + "]: " + commands[i].getClass().getSimpleName());
+            String cmdName = getCommandDisplayName(commands[i]);
+            log.debug("Executing macro command [" + i + "]: " + cmdName);
+
+            // Report progress to listener
+            if (progressListener != null) {
+                progressListener.onProgress(i, commands.length, cmdName);
+            }
+
             try {
                 commands[i].execute();
+
+                // Report step complete
+                if (progressListener != null) {
+                    progressListener.onStepComplete();
+                }
             } catch (Exception e) {
                 log.error("Error executing command [" + i + "] in macro '" + name + "': " + e.getMessage());
+                if (progressListener != null) {
+                    progressListener.onError("Command " + i + " failed: " + e.getMessage());
+                }
                 e.printStackTrace();
                 // Continue executing remaining commands
             }
         }
         log.success("MacroCommand '" + name + "' execution completed");
-        applyDuration();
+        if (progressListener != null) {
+            progressListener.onComplete();
+        }
     }
 
     /**
-     * Execute with progress tracking for each command
+     * Get human-readable display name for a command
+     * Converts class name to readable format: "LightOnCommand" -> "Light On"
      */
-    @Override
-    public void executeWithProgress(ProgressCallback progressCallback) throws InterruptedException {
-        log.info("Executing MacroCommand '" + name + "' with progress tracking - running " + commands.length + " commands");
-
-        for (int i = 0; i < commands.length; i++) {
-            log.debug("Executing macro command [" + i + "/" + commands.length + "]: " + commands[i].getClass().getSimpleName());
-
-            try {
-                // Report progress before command
-                if (progressCallback != null) {
-                    double progress = (double) i / commands.length;
-                    progressCallback.onProgress(progress);
-                }
-
-                // Execute command with duration
-                if (commands[i] instanceof CommandWithProgress) {
-                    CommandWithProgress cmdWithProgress = (CommandWithProgress) commands[i];
-                    cmdWithProgress.executeWithProgress(null); // Execute with its own duration
-                } else {
-                    // Fallback for commands that don't implement CommandWithProgress
-                    commands[i].execute();
-                    Thread.sleep(250); // Default 250ms delay
-                }
-
-            } catch (Exception e) {
-                log.error("Error executing command [" + i + "] in macro '" + name + "': " + e.getMessage());
-                // Continue executing remaining commands
-            }
-        }
-
-        // Report completion
-        if (progressCallback != null) {
-            progressCallback.onProgress(1.0);
-        }
-
-        log.success("MacroCommand '" + name + "' execution completed");
-        applyDuration();
-    }
-
-    /**
-     * Get total duration of all child commands in macro (not including macro's own duration)
-     * Used for progress tracking and timing calculations
-     */
-    public long getChildrenDurationMs() {
-        long totalDuration = 0;
-        for (Command cmd : commands) {
-            if (cmd instanceof CommandWithProgress) {
-                totalDuration += ((CommandWithProgress) cmd).getDurationMs();
-            } else {
-                totalDuration += 250; // Default duration
-            }
-        }
-        return totalDuration;
-    }
-
-    /**
-     * Get macro's own configured duration from BaseCommand
-     */
-    @Override
-    public long getDurationMs() {
-        return super.getDurationMs();
-    }
-
-    /**
-     * Undo all commands in reverse order
-     * Note: This requires commands to implement proper undo functionality
-     */
-    public void undo() {
-        log.info("Undoing MacroCommand '" + name + "' - reversing " + commands.length + " commands");
-        // Execute commands in reverse order for undo
-        for (int i = commands.length - 1; i >= 0; i--) {
-            log.debug("Undoing macro command [" + i + "]: " + commands[i].getClass().getSimpleName());
-            try {
-                // For now, we'll need to execute the opposite command
-                // This assumes each command has a corresponding opposite
-                // TODO: Implement proper Command.undo() interface method
-                commands[i].execute(); // Placeholder - needs proper undo
-            } catch (Exception e) {
-                log.error("Error undoing command [" + i + "] in macro '" + name + "': " + e.getMessage());
-            }
-        }
-        log.success("MacroCommand '" + name + "' undo completed");
+    private String getCommandDisplayName(Command cmd) {
+        String className = cmd.getClass().getSimpleName();
+        // Remove "Command" suffix if present
+        String withoutSuffix = className.replace("Command", "");
+        // Convert camelCase to spaces: "LightOn" -> "Light On"
+        String spaced = withoutSuffix.replaceAll("([A-Z])", " $1").trim();
+        return spaced.isEmpty() ? className : spaced;
     }
 
     /**
