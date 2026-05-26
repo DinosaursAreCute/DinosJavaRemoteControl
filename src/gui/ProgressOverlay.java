@@ -74,11 +74,19 @@ public class ProgressOverlay extends StackPane implements ProgressListener {
 
     /**
      * Update progress (0.0 to 1.0)
+     * Must be called from FX thread
      */
-    public void updateProgress(double progress) {
+    private void updateProgressUI(double progress) {
         progressBar.setProgress(Math.min(progress, 1.0));
         int percent = (int) (progress * 100);
         percentLabel.setText(percent + "%");
+    }
+
+    /**
+     * Update progress safely from any thread
+     */
+    public void updateProgress(double progress) {
+        Platform.runLater(() -> updateProgressUI(progress));
     }
 
     /**
@@ -94,34 +102,43 @@ public class ProgressOverlay extends StackPane implements ProgressListener {
 
     @Override
     public void onProgress(int currentStep, int totalSteps, String stepName) {
-        this.currentStep = currentStep;
-        this.totalSteps = totalSteps;
+        Platform.runLater(() -> {
+            this.currentStep = currentStep;
+            this.totalSteps = totalSteps;
 
-        // Update step label with child command info
-        String stepText = String.format("Step %d/%d: %s", currentStep + 1, totalSteps, stepName);
-        stepLabel.setText(stepText);
+            // Update step label with child command info
+            String stepText = String.format("Step %d/%d: %s", currentStep + 1, totalSteps, stepName);
+            stepLabel.setText(stepText);
 
-        // Update progress based on step completion
-        double progress = (double) currentStep / totalSteps;
-        updateProgress(progress);
+            // Update progress based on step completion (currentStep + 1 because we're executing that step)
+            // Progress goes from 1/N to N/N as we move through steps 0 to totalSteps-1
+            double progress = (double) (currentStep + 1) / totalSteps;
+            updateProgressUI(progress);  // Direct call since we're already on FX thread via Platform.runLater
+        });
     }
 
     @Override
     public void onStepComplete() {
-        // Progress bar will be updated by onProgress for next step
+        Platform.runLater(() -> {
+            // Progress bar will be updated by onProgress for next step
+        });
     }
 
     @Override
     public void onComplete() {
-        // Set to 100% when complete
-        updateProgress(1.0);
-        stepLabel.setText("Complete!");
+        Platform.runLater(() -> {
+            // Set to 100% when complete
+            updateProgressUI(1.0);  // Direct call since we're on FX thread
+            stepLabel.setText("Complete!");
+        });
     }
 
     @Override
     public void onError(String errorMessage) {
-        stepLabel.setText("Error: " + errorMessage);
-        stepLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12;");
+        Platform.runLater(() -> {
+            stepLabel.setText("Error: " + errorMessage);
+            stepLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12;");
+        });
     }
 }
 

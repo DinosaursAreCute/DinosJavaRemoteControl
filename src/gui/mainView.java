@@ -36,7 +36,7 @@ public class mainView extends Application {
     private VBox buttonGrid;
     private Button btnUndo;
     private Button btnRedo;
-    private Stage debugWindow;
+    private DebugWindow debugWindow;  // Separate debug window instance
     private ProgressOverlay progressOverlay;  // Global progress overlay
 
     @Override
@@ -111,11 +111,15 @@ public class mainView extends Application {
             applyInlineCSS(root, menuBar, buttonGrid);
         }
 
+        // Initialize debug window (but don't show yet)
+        debugWindow = new DebugWindow(remote);
+
+
         primaryStage.setTitle("Dinos Remote Control");
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(e -> {
             log.info("Application closing");
-            if (debugWindow != null) {
+            if (debugWindow != null && debugWindow.isShowing()) {
                 debugWindow.close();
             }
         });
@@ -439,6 +443,11 @@ public class mainView extends Application {
             // Hide overlay
             progressOverlay.hide();
             updateControlButtons();
+
+            // Refresh debug window if open
+            if (debugWindow != null && debugWindow.isShowing()) {
+                debugWindow.refreshAll();
+            }
         });
 
         task.setOnFailed(e -> {
@@ -501,71 +510,9 @@ public class mainView extends Application {
      * Open the Debug window
      */
     private void openDebugWindow() {
-        if (debugWindow != null && debugWindow.isShowing()) {
-            debugWindow.toFront();
-            return;
+        if (debugWindow != null) {
+            debugWindow.show();
         }
-
-        log.info("Opening Debug window");
-
-        debugWindow = new Stage();
-        debugWindow.setTitle("Debug Panel");
-
-        TabPane tabPane = new TabPane();
-
-        // Tab 1: Log Output
-        Tab logTab = new Tab("Log Output");
-        logTab.setClosable(false);
-        TextArea logArea = new TextArea();
-        logArea.setEditable(false);
-        logArea.setText("Log output will appear here...\n(Real-time log integration coming soon)");
-        logTab.setContent(logArea);
-
-        // Tab 2: Receiver States
-        Tab statesTab = new Tab("Receiver States");
-        statesTab.setClosable(false);
-        TextArea statesArea = new TextArea();
-        statesArea.setEditable(false);
-        statesArea.setText("Receiver States:\n\n(State tracking coming soon)");
-        statesTab.setContent(statesArea);
-
-        // Tab 3: Session Stats
-        Tab statsTab = new Tab("Session Stats");
-        statsTab.setClosable(false);
-        TextArea statsArea = new TextArea();
-        statsArea.setEditable(false);
-        updateSessionStats(statsArea);
-        statsTab.setContent(statsArea);
-
-        // Refresh stats when tab is selected
-        statsTab.setOnSelectionChanged(e -> {
-            if (statsTab.isSelected()) {
-                updateSessionStats(statsArea);
-            }
-        });
-
-        tabPane.getTabs().addAll(logTab, statesTab, statsTab);
-
-        Scene scene = new Scene(tabPane, 600, 400);
-
-        // Load CSS file
-        try {
-            String cssPath = "file:src/gui/remote-control-dark.css";
-            scene.getStylesheets().add(cssPath);
-        } catch (Exception e) {
-            log.warning("Could not load CSS for debug window: " + e.getMessage());
-        }
-
-        debugWindow.setScene(scene);
-        debugWindow.show();
-    }
-
-    /**
-     * Update session statistics display
-     */
-    private void updateSessionStats(TextArea statsArea) {
-        SessionStats stats = remote.getSessionStats();
-        statsArea.setText(stats.getFormattedReport());
     }
 
     /**

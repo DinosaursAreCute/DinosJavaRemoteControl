@@ -86,6 +86,18 @@ public class Stereoanlage {
 		this.currentMode = Mode.RADIO;
 	}
 
+	public String getCd() {
+		return cd;
+	}
+
+	public boolean isAn() {
+		return an;
+	}
+
+	public boolean isSpielt() {
+		return spielt;
+	}
+
 	public String getAktuelleCD() {
 		return this.cd;
 	}

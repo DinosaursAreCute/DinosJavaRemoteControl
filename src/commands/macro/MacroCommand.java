@@ -77,7 +77,7 @@ public class MacroCommand extends BaseCommand {
     public void execute() {
         log.info("Executing MacroCommand '" + name + "' - running " + commands.length + " commands");
         for (int i = 0; i < commands.length; i++) {
-            String cmdName = commands[i].getClass().getSimpleName();
+            String cmdName = getCommandDisplayName(commands[i]);
             log.debug("Executing macro command [" + i + "]: " + cmdName);
 
             // Report progress to listener
@@ -105,6 +105,19 @@ public class MacroCommand extends BaseCommand {
         if (progressListener != null) {
             progressListener.onComplete();
         }
+    }
+
+    /**
+     * Get human-readable display name for a command
+     * Converts class name to readable format: "LightOnCommand" -> "Light On"
+     */
+    private String getCommandDisplayName(Command cmd) {
+        String className = cmd.getClass().getSimpleName();
+        // Remove "Command" suffix if present
+        String withoutSuffix = className.replace("Command", "");
+        // Convert camelCase to spaces: "LightOn" -> "Light On"
+        String spaced = withoutSuffix.replaceAll("([A-Z])", " $1").trim();
+        return spaced.isEmpty() ? className : spaced;
     }
 
     /**
